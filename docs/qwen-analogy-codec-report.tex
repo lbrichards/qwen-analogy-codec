@@ -42,6 +42,15 @@ and the learned gender and royalty directions are nearly orthogonal. The point
 of the experiment is not to claim a universal semantic basis inside Qwen. It is
 to show, in a controlled setting, that useful semantic structure can be pulled
 out of model activations and compressed into a very small, inspectable interface.
+A loss ablation shows that classification-only training still recovers a strong
+analogy cosine of 0.9840, suggesting that the relation is not created solely by
+the explicit analogy term. Held-out vocabulary tests show partial generalization:
+royal words such as \emph{prince} and \emph{duke} land nearest to \emph{king},
+while \emph{princess} and \emph{duchess} land nearest to \emph{queen}. A
+pseudoinverse hidden-state intervention gives small but directional evidence
+for write access: increasing the 2D gender shift raises log-probabilities for
+\emph{queen}, \emph{woman}, and \emph{princess}, while slightly lowering
+\emph{king}.
 \end{abstract}
 
 \section{Introduction}
@@ -378,6 +387,72 @@ tested, plotted, and reasoned about. This framing is compatible with the broader
 linear representation hypothesis: useful semantic variables may sometimes be
 represented in directions or low-dimensional subspaces that simple maps can
 recover \cite{park2023}.
+
+\section{Intervention}
+
+The previous sections treat the codec as a readout. A stronger question is
+whether it can also support a small write operation. We therefore ran a simple
+pseudoinverse intervention inspired by causal abstraction and model-editing
+work \cite{geiger2021, meng2022, nanda2023}.
+
+Let \(g_{2d} = \mu_{\mathrm{woman}} - \mu_{\mathrm{man}}\) be the learned
+gender direction in the codec space. Starting at \(\mu_{\mathrm{king}}\), we
+constructed targets
+\[
+  z_{\alpha} = \mu_{\mathrm{king}} + \alpha g_{2d},
+  \quad \alpha \in \{0, 0.5, 1.0\}.
+\]
+Using the Moore--Penrose pseudoinverse of the encoder matrix, we mapped the 2D
+shift back to a minimum-norm hidden-state perturbation:
+\[
+  \Delta x_{\alpha} = (\alpha g_{2d}) W_e^{+}.
+\]
+We then ran Qwen on the prompt
+\begin{quote}
+I saw the king today. The royal person was a
+\end{quote}
+and added \(\Delta x_{\alpha}\) to the hidden state of the \emph{king} token at
+the codec layer before the later tokens attended to it. We measured continuation
+log-probabilities for six target words.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lrr}
+\toprule
+Continuation & Shift at \(\alpha=0.5\) & Shift at \(\alpha=1.0\) \\
+\midrule
+king     & -0.051 & -0.105 \\
+queen    &  0.285 &  0.574 \\
+prince   & -0.027 & -0.066 \\
+princess &  0.223 &  0.457 \\
+man      & -0.012 & -0.020 \\
+woman    &  0.285 &  0.559 \\
+\bottomrule
+\end{tabular}
+\caption{Continuation log-probability shifts relative to \(\alpha=0\), in nats.
+The intervention raises queen/woman/princess continuations and slightly lowers
+king/prince/man continuations.}
+\label{tab:intervention}
+\end{table}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.86\linewidth]{intervention_logprob_shifts.pdf}
+\caption{Log-probability shifts under the pseudoinverse hidden-state
+intervention. The effect is small, but it is monotone and directionally aligned
+with the intended 2D shift.}
+\label{fig:intervention}
+\end{figure}
+
+This is not a dramatic steering result. The greedy completions were nearly
+unchanged: at \(\alpha=0\) and \(\alpha=0.5\), the model continued with
+``bit upset, but I tried to be,'' while at \(\alpha=1.0\) it continued with
+``bit upset, and I wanted to help.'' Still, the log-probability shifts are
+directional. The same 2D shift that moves \(\mu_{\mathrm{king}}\) toward the
+queen side of the codec also increases the probabilities of queen-related and
+female-coded continuations in the downstream distribution. This is modest
+evidence that the codec is not only a readable interface, but a weak writeable
+one.
 
 \section{Limitations}
 
