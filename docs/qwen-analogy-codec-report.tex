@@ -9,6 +9,8 @@
 \usepackage{microtype}
 \usepackage{xcolor}
 
+\graphicspath{{figures/}{../figures/}}
+
 \hypersetup{
   colorlinks=true,
   linkcolor=blue,
@@ -268,6 +270,64 @@ full objective sharpens the geometry and makes the axes nearly orthogonal, but
 the analogy relation is not created entirely by the analogy term. Some of the
 structure is already available in the activations and can be recovered by a
 very small supervised interface.
+
+\section{Held-Out Vocabulary}
+
+The four training words leave open an obvious concern: perhaps the codec has
+only memorized four labels. To make a first check, we froze the trained codec
+and extracted new hidden states for eight held-out words using the same sentence
+template scheme:
+\[
+  \{\mathrm{prince}, \mathrm{princess}, \mathrm{boy}, \mathrm{girl},
+  \mathrm{father}, \mathrm{mother}, \mathrm{duke}, \mathrm{duchess}\}.
+\]
+There was no retraining or refitting. Each held-out word was sampled in 50
+contexts, projected through the existing encoder, and compared to the four
+trained class means.
+
+\begin{table}[h]
+\centering
+\scriptsize
+\begin{tabular}{lrrlrrrrl}
+\toprule
+Word & \(z_1\) & \(z_2\) & Quadrant & \(d_k\) & \(d_q\) & \(d_m\) & \(d_w\) & Nearest \\
+\midrule
+prince   & -5.09 & -5.59 & III & 2.68 & 10.59 & 13.55 & 16.85 & king \\
+princess & -0.01 & -5.45 & III & 6.73 & 5.97  & 14.37 & 13.94 & queen \\
+boy      & -2.64 &  4.07 & II  & 12.61 & 14.83 & 4.63  & 9.09  & man \\
+girl     &  3.46 &  4.59 & I   & 15.90 & 13.29 & 9.25  & 3.56  & woman \\
+father   & -1.49 & -0.41 & III & 8.96 & 10.49 & 9.14  & 10.59 & king \\
+mother   &  4.69 & -2.08 & IV  & 12.43 & 6.54  & 14.07 & 9.34  & queen \\
+duke     & -4.16 & -4.65 & III & 3.95 & 10.03 & 12.66 & 15.53 & king \\
+duchess  &  3.03 & -2.43 & IV  & 10.81 & 6.50  & 13.23 & 10.02 & queen \\
+\bottomrule
+\end{tabular}
+\caption{Held-out vocabulary projected through the trained codec. Distances are
+to the trained class means \(k=\mathrm{king}\), \(q=\mathrm{queen}\),
+\(m=\mathrm{man}\), and \(w=\mathrm{woman}\).}
+\label{tab:heldout-vocab}
+\end{table}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.92\linewidth]{heldout_vocabulary.pdf}
+\caption{Trained classes are shown with filled markers; held-out classes are
+shown with open markers. The royal masculine held-out words \emph{prince} and
+\emph{duke} land nearest to \emph{king}, while \emph{princess} and
+\emph{duchess} land nearest to \emph{queen}.}
+\label{fig:heldout-vocab}
+\end{figure}
+
+The result is encouraging but not perfectly clean. The strongest pattern is in
+the royal words: \emph{prince} and \emph{duke} land closest to the king mean,
+while \emph{princess} and \emph{duchess} land closest to the queen mean. The
+basic gender words also behave as expected: \emph{boy} is nearest to
+\emph{man}, and \emph{girl} is nearest to \emph{woman}. The family terms are
+messier: \emph{father} is pulled toward the king region and \emph{mother}
+toward the queen region, suggesting that the current plane is not a pure
+gender axis plus a pure royalty axis. Still, the held-out projection gives
+evidence that the codec is not merely memorizing four training labels; it
+transfers some structure to unseen but related vocabulary.
 
 \section{What This Shows}
 

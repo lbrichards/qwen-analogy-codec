@@ -1,0 +1,90 @@
+[
+  {
+    "word": "prince",
+    "mean_z1": -5.093740940093994,
+    "mean_z2": -5.587671279907227,
+    "quadrant": "III (-,-)",
+    "nearest_train_class": "king",
+    "dist_to_king": 2.678574562072754,
+    "dist_to_queen": 10.586852073669434,
+    "dist_to_man": 13.554716110229492,
+    "dist_to_woman": 16.847028732299805
+  },
+  {
+    "word": "princess",
+    "mean_z1": -0.007473902776837349,
+    "mean_z2": -5.449389457702637,
+    "quadrant": "III (-,-)",
+    "nearest_train_class": "queen",
+    "dist_to_king": 6.727280139923096,
+    "dist_to_queen": 5.965014457702637,
+    "dist_to_man": 14.369781494140625,
+    "dist_to_woman": 13.939872741699219
+  },
+  {
+    "word": "boy",
+    "mean_z1": -2.6399827003479004,
+    "mean_z2": 4.074213027954102,
+    "quadrant": "II (-,+)",
+    "nearest_train_class": "man",
+    "dist_to_king": 12.60997486114502,
+    "dist_to_queen": 14.832059860229492,
+    "dist_to_man": 4.634295463562012,
+    "dist_to_woman": 9.088232040405273
+  },
+  {
+    "word": "girl",
+    "mean_z1": 3.455507516860962,
+    "mean_z2": 4.592054843902588,
+    "quadrant": "I (+,+)",
+    "nearest_train_class": "woman",
+    "dist_to_king": 15.89578628540039,
+    "dist_to_queen": 13.294886589050293,
+    "dist_to_man": 9.247955322265625,
+    "dist_to_woman": 3.5585625171661377
+  },
+  {
+    "word": "father",
+    "mean_z1": -1.4914655685424805,
+    "mean_z2": -0.41110360622406006,
+    "quadrant": "III (-,-)",
+    "nearest_train_class": "king",
+    "dist_to_king": 8.957586288452148,
+    "dist_to_queen": 10.488150596618652,
+    "dist_to_man": 9.143856048583984,
+    "dist_to_woman": 10.593936920166016
+  },
+  {
+    "word": "mother",
+    "mean_z1": 4.690678119659424,
+    "mean_z2": -2.081192970275879,
+    "quadrant": "IV (+,-)",
+    "nearest_train_class": "queen",
+    "dist_to_king": 12.425409317016602,
+    "dist_to_queen": 6.535324573516846,
+    "dist_to_man": 14.067519187927246,
+    "dist_to_woman": 9.335783004760742
+  },
+  {
+    "word": "duke",
+    "mean_z1": -4.1643805503845215,
+    "mean_z2": -4.64941930770874,
+    "quadrant": "III (-,-)",
+    "nearest_train_class": "king",
+    "dist_to_king": 3.947005033493042,
+    "dist_to_queen": 10.031407356262207,
+    "dist_to_man": 12.655132293701172,
+    "dist_to_woman": 15.529867172241211
+  },
+  {
+    "word": "duchess",
+    "mean_z1": 3.0268185138702393,
+    "mean_z2": -2.4271788597106934,
+    "quadrant": "IV (+,-)",
+    "nearest_train_class": "queen",
+    "dist_to_king": 10.809453010559082,
+    "dist_to_queen": 6.503154754638672,
+    "dist_to_man": 13.227762222290039,
+    "dist_to_woman": 10.024154663085938
+  }
+]
