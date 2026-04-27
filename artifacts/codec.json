@@ -1,0 +1,37 @@
+{
+  "model": "/Users/larry/Development/Qwen2.5-3B-Instruct",
+  "layer_offset": 10,
+  "analogy_cos": 0.9995740652084351,
+  "held_out_acc": 1.0,
+  "notes": "POC Sprint-1 trained codec",
+  "schema_version": "poc-1.0",
+  "shapes": {
+    "We": [
+      2048,
+      2
+    ],
+    "be": [
+      2
+    ],
+    "Wd": [
+      2,
+      2048
+    ],
+    "bd": [
+      2048
+    ],
+    "U": [
+      2,
+      4
+    ],
+    "bu": [
+      4
+    ],
+    "gender_axis": [
+      2048
+    ],
+    "royalty_axis": [
+      2048
+    ]
+  }
+}

@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "qwen-analogy-codec"
+version = "0.1.0"
+description = "A 2D interpretable analogy codec over frozen Qwen hidden states."
+readme = "README.md"
+requires-python = ">=3.10,<3.13"
+license = { file = "LICENSE" }
+authors = [{ name = "Larry Richards" }]
+dependencies = [
+    "torch>=2.3",
+    "transformers>=4.44",
+    "numpy>=1.26,<2.0",
+    "pandas>=2.2",
+    "matplotlib>=3.8",
+    "seaborn>=0.13",
+    "scikit-learn>=1.5",
+    "safetensors>=0.4",
+    "tokenizers>=0.19",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "ruff>=0.5"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
