@@ -271,6 +271,32 @@ the analogy relation is not created entirely by the analogy term. Some of the
 structure is already available in the activations and can be recovered by a
 very small supervised interface.
 
+\subsection{Layer Sweep}
+
+The original run used one hidden layer, selected by an offset of 10 from the
+final layer. To check whether the result depends on a single cherry-picked
+layer, we repeated the extraction across all decoder-layer outputs and trained
+the same codec at each layer. Figure~\ref{fig:layer-sweep} shows the analogy
+cosine and held-out classification accuracy by layer.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.92\linewidth]{layer_sweep.pdf}
+\caption{Layer sweep over decoder-layer outputs. The dashed line marks the
+original layer used in the main experiment. With the full loss, the analogy
+geometry is recoverable across most layers; the latest layers show the most
+visible drop in analogy cosine, while nearest-mean classification remains
+saturated.}
+\label{fig:layer-sweep}
+\end{figure}
+
+The sweep weakens the cherry-picking concern but also shows a limitation of this
+particular metric. With the full objective, the small codec can recover
+near-perfect analogy geometry from nearly every layer, so the layer sweep is not
+a sensitive probe of where the structure first appears. The slight drop in the
+latest layers suggests that the relation is not equally legible everywhere, but
+classification accuracy is saturated throughout.
+
 \section{Held-Out Vocabulary}
 
 The four training words leave open an obvious concern: perhaps the codec has
