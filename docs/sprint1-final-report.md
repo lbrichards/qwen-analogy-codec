@@ -40,7 +40,7 @@ All required CSV artifacts have been generated and verified:
 ## Technical Highlights
 
 ### Extraction Pipeline
-- **Model**: Qwen2.5-1.5B-Instruct (4-bit quantized)
+- **Model**: Qwen2.5-3B-Instruct (Hugging Face safetensors, bf16)
 - **Layer**: Hidden layer 10 (optimal for analogy)
 - **Pooling**: Final subword token (position-aware)
 - **Languages**: English, French, German (extensible)
@@ -85,7 +85,7 @@ All required CSV artifacts have been generated and verified:
 - Add interpretability visualizations
 
 ## Conclusion
-Sprint-1 demonstrates successful extraction of interpretable 2D representations from a 4-bit quantized language model, achieving near-perfect analogy encoding (0.9996) and 100% classification accuracy through learned projection.
+Sprint-1 demonstrates successful extraction of interpretable 2D representations from a frozen Qwen2.5-3B-Instruct model, achieving near-perfect analogy encoding (0.9996) and 100% classification accuracy through learned projection.
 
 ---
 Generated: 2025-09-14

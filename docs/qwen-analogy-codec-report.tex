@@ -1,0 +1,437 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{microtype}
+\usepackage{xcolor}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue,
+  citecolor=blue,
+  urlcolor=blue
+}
+
+\title{A Tiny Interpretable Codec for Analogy Structure in Qwen Hidden States}
+\author{Larry Richards}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+This report describes a small experiment in extracting a human-readable semantic
+coordinate system from the hidden states of a frozen language model. We take
+hidden activations from Qwen 2.5 for four words---\emph{king}, \emph{queen},
+\emph{man}, and \emph{woman}---and train a linear encoder that maps those
+high-dimensional activations into a two-dimensional latent space. In the learned
+space, the classic analogy relation
+\[
+  \mathrm{king} - \mathrm{man} + \mathrm{woman} \approx \mathrm{queen}
+\]
+holds with cosine similarity around 0.9996. The four word classes are also
+perfectly separated by a nearest-mean classifier in the two-dimensional space,
+and the learned gender and royalty directions are nearly orthogonal. The point
+of the experiment is not to claim a universal semantic basis inside Qwen. It is
+to show, in a controlled setting, that useful semantic structure can be pulled
+out of model activations and compressed into a very small, inspectable interface.
+\end{abstract}
+
+\section{Introduction}
+
+Large language models represent words and contexts as high-dimensional internal
+states. These states are powerful, but they are not naturally easy to inspect.
+The broad question behind this experiment is simple: can we build a small
+interface, or \emph{codec}, that exposes a meaningful slice of this internal
+structure in a form a human can look at?
+
+This experiment focuses on one deliberately tiny semantic domain: the familiar
+analogy
+\[
+  \mathrm{king} - \mathrm{man} + \mathrm{woman} \approx \mathrm{queen}.
+\] \cite{mikolov2013analogies}.
+Rather than testing this relation in an embedding table, we extract hidden
+states from a frozen Qwen 2.5 instruction model \cite{qwen2024} while the
+target words appear in simple sentence contexts. We then train a
+two-dimensional linear projection that organizes those hidden states into an
+interpretable plane.
+
+The result is a compact proof of concept. A two-dimensional learned space is
+enough to preserve the analogy, separate the four classes, and expose two
+nearly orthogonal semantic directions corresponding roughly to gender and
+royalty. This is a small result, but it is useful because it gives the larger
+``latent bus'' idea something concrete to stand on: model internals can be
+wrapped with small, testable semantic interfaces.
+
+\section{Experiment Overview}
+
+The experiment has three stages.
+
+\begin{enumerate}
+  \item Extract hidden-state representations for the target words from a frozen
+  Qwen model.
+  \item Train a linear codec from the model's hidden dimension into a
+  two-dimensional latent space.
+  \item Validate the learned space using analogy, classification, and axis
+  geometry checks.
+\end{enumerate}
+
+The target vocabulary is intentionally small:
+\[
+  \mathcal{W} = \{\mathrm{king}, \mathrm{queen}, \mathrm{man}, \mathrm{woman}\}.
+\]
+For each word, the extraction script generates 100 short sentence contexts from
+simple templates such as:
+
+\begin{quote}
+I saw the king today. \\
+The king was there. \\
+Look at the king. \\
+Where is the king?
+\end{quote}
+
+The target word is located using tokenizer offset mappings, and the hidden state
+for the final token of the word is extracted from a selected model layer. In
+the original run, the selected hidden layer used an offset of 10 from the final
+layer. This gives 400 total hidden-state examples: 100 for each of the four
+words.
+
+\section{Codec Model}
+
+Let \(x \in \mathbb{R}^d\) be a Qwen hidden-state vector for a target word in
+context. The codec learns a linear encoder
+\[
+  z = x W_e + b_e,
+\]
+where \(z \in \mathbb{R}^2\). The purpose of the encoder is not merely to reduce
+dimension. It is trained to produce a two-dimensional space where the analogy
+geometry and class separation are both explicit. In this respect it is close in
+spirit to linear probing, but with an explicit geometric target rather than
+only a diagnostic classifier \cite{alain2016, belinkov2022}.
+
+The training objective combines several terms:
+
+\[
+  \mathcal{L}
+  =
+  \mathcal{L}_{cls}
+  + 3.0 \mathcal{L}_{analogy}
+  + \mathcal{L}_{perp}
+  + 0.1 \mathcal{L}_{orth}
+  + 0.5 \mathcal{L}_{sep}.
+\]
+
+Here, \(\mathcal{L}_{cls}\) is a classification loss in the two-dimensional
+space. The analogy loss encourages
+\[
+  \mu_{\mathrm{king}} - \mu_{\mathrm{man}} + \mu_{\mathrm{woman}}
+  \approx
+  \mu_{\mathrm{queen}},
+\]
+where \(\mu_w\) is the class mean for word \(w\) after projection. The
+perpendicularity term encourages the gender and royalty directions to be close
+to orthogonal. A light encoder regularizer keeps the projection from becoming
+pathological, and a separation term discourages the four class means from
+collapsing together.
+
+This is deliberately simple: no nonlinear encoder, no complicated probing
+architecture, and no model fine-tuning. The language model is frozen; only the
+small projection and a lightweight classifier head are trained.
+
+\section{Validation}
+
+The experiment uses three main validation gates.
+
+\subsection{Analogy Gate}
+
+The first gate checks whether the analogy holds in the learned two-dimensional
+space:
+\[
+  \cos(
+    \mu_{\mathrm{king}} - \mu_{\mathrm{man}} + \mu_{\mathrm{woman}},
+    \mu_{\mathrm{queen}}
+  ) \geq 0.95.
+\]
+
+In the saved run, this value is approximately 0.9996. This is the strongest
+single sign that the codec is organizing the four concepts into the intended
+geometry.
+
+\subsection{Classification Gate}
+
+The second gate asks whether individual projected examples can be classified
+correctly in the two-dimensional space. The validation code uses a simple
+nearest-mean classifier. Each held-out projected point is assigned to whichever
+class mean is closest in Euclidean distance:
+\[
+  \hat{y}(z) = \arg\min_{w \in \mathcal{W}} \|z - \mu_w\|_2.
+\]
+
+The data points used here are not synthetic perturbations in the two-dimensional
+space. They are real hidden-state activations extracted from different sentence
+contexts, then projected through the learned codec. The original validation uses
+a 70/30 split per class for the classification report, producing 30 held-out
+examples per word and 120 held-out examples total.
+
+\subsection{Axis Geometry Gate}
+
+The third gate checks whether the two main semantic directions are nearly
+orthogonal. The gender direction is defined as
+\[
+  g = \mu_{\mathrm{woman}} - \mu_{\mathrm{man}},
+\]
+and the royalty direction is defined as
+\[
+  r = \mu_{\mathrm{king}} - \mu_{\mathrm{man}}.
+\]
+
+The angle between these two directions is approximately \(89.7^\circ\), which
+is very close to the intended right angle.
+
+\section{Results}
+
+Table~\ref{tab:main-results} summarizes the main validation results.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{llll}
+\toprule
+Gate & Metric & Result & Target \\
+\midrule
+Analogy & Cosine similarity & 0.9996 & \(\geq 0.95\) \\
+Classification & Held-out accuracy & 100.0\% & \(\geq 98\%\) \\
+Axis geometry & Gender/royalty angle & \(89.7^\circ\) & near \(90^\circ\) \\
+\bottomrule
+\end{tabular}
+\caption{Main validation gates for the trained two-dimensional codec.}
+\label{tab:main-results}
+\end{table}
+
+The held-out confusion matrix is perfectly diagonal:
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lrrrr}
+\toprule
+True class & king & queen & man & woman \\
+\midrule
+king  & 30 & 0  & 0  & 0 \\
+queen & 0  & 30 & 0  & 0 \\
+man   & 0  & 0  & 30 & 0 \\
+woman & 0  & 0  & 0  & 30 \\
+\bottomrule
+\end{tabular}
+\caption{Nearest-mean classification in the learned two-dimensional space.}
+\label{tab:confusion}
+\end{table}
+
+The important thing about this result is not that the classifier is complex. It
+is the opposite: classification is almost embarrassingly simple once the codec
+has organized the representations. The model activations land in a plane where
+the four concepts are cleanly separated, and the analogy is visible as geometry.
+
+\subsection{Loss Ablation}
+
+The full objective deliberately asks for both class separation and analogy
+geometry. To check how much of the result is imposed by the loss, we reran the
+codec training under five loss configurations while holding the data, seed,
+optimizer, learning rate, and number of steps fixed. Table~\ref{tab:loss-ablation}
+shows the result.
+
+\begin{table}[h]
+\centering
+\begin{tabular}{lrrr}
+\toprule
+Training objective & Analogy cosine & Accuracy & Axis angle \\
+\midrule
+Full loss & 1.0000 & 100.0\% & \(90.0^\circ\) \\
+Drop \(\mathcal{L}_{analogy}\) & 0.9951 & 100.0\% & \(90.0^\circ\) \\
+Drop \(\mathcal{L}_{perp}\) & 0.9998 & 100.0\% & \(98.5^\circ\) \\
+Drop \(\mathcal{L}_{analogy}\) and \(\mathcal{L}_{perp}\) & 0.9971 & 100.0\% & \(96.4^\circ\) \\
+Classification only & 0.9840 & 100.0\% & \(105.8^\circ\) \\
+\bottomrule
+\end{tabular}
+\caption{Loss ablation with fixed seed, data, optimizer, learning rate, and
+3000 training steps. The ablation uses the saved extracted activations and
+re-trains the small codec for each configuration.}
+\label{tab:loss-ablation}
+\end{table}
+
+The interesting result is the last row. Even with classification loss alone,
+the learned two-dimensional space still gives an analogy cosine of 0.9840. The
+full objective sharpens the geometry and makes the axes nearly orthogonal, but
+the analogy relation is not created entirely by the analogy term. Some of the
+structure is already available in the activations and can be recovered by a
+very small supervised interface.
+
+\section{What This Shows}
+
+The experiment supports three modest claims.
+
+First, the Qwen hidden states contain enough information to distinguish these
+four word classes across simple contexts. This is expected, but the clean
+two-dimensional separation makes it directly visible.
+
+Second, the analogy structure can be made explicit with a small supervised
+projection. The relation does not have to be recovered by inspecting the full
+hidden state directly; it can be exposed through a tiny learned interface.
+
+Third, the learned space is not just a classifier trick. The geometry has
+interpretable structure: the analogy closes, and the two hand-named semantic
+directions are close to orthogonal.
+
+This is why the experiment is interesting. It suggests that at least some
+semantic circuits inside a model can be treated as something like an API: a
+small codec translates opaque activation vectors into coordinates that can be
+tested, plotted, and reasoned about. This framing is compatible with the broader
+linear representation hypothesis: useful semantic variables may sometimes be
+represented in directions or low-dimensional subspaces that simple maps can
+recover \cite{park2023}.
+
+\section{Limitations}
+
+This is a proof of concept, not a broad interpretability result.
+
+The vocabulary is tiny. Four words are enough to test the idea, but not enough
+to claim that the same two axes generalize across language. A stronger version
+would include many royal terms, many gendered terms, neutral controls, and
+examples across languages and syntactic settings.
+
+The classification gate is also not a strict generalization benchmark. The
+codec is trained using the full extracted dataset, and the held-out split is
+used afterward to check separability in the learned space. This is acceptable
+for a first demonstration, but future work should use a cleaner train,
+validation, and test protocol. More generally, probe results need controls:
+a sufficiently expressive probe can sometimes learn the task rather than reveal
+what was already explicit in the representation \cite{hewitt2019}.
+
+The sentence templates are simple. That is useful because it keeps the
+experiment controlled, but it also means the result may depend on a narrow
+distribution of contexts. More varied natural sentences would make the test
+more realistic.
+
+Finally, the axis names should be read carefully. Calling one direction
+``gender'' and another ``royalty'' is a useful interpretation of this particular
+four-word geometry. It is not evidence, by itself, that the model has a single
+global gender direction or royalty direction in the larger hidden space.
+Superposition also gives a reason to expect useful features to be entangled
+rather than cleanly isolated in general \cite{elhage2022}.
+
+\section{Next Steps}
+
+The most natural next step is to scale the vocabulary while keeping the codec
+small. For example, one could include terms such as \emph{prince},
+\emph{princess}, \emph{duke}, \emph{duchess}, \emph{boy}, \emph{girl},
+\emph{father}, and \emph{mother}, plus neutral controls. If the same two axes
+remain useful, the result becomes much more compelling.
+
+Another direction is to test cross-context generalization. The codec could be
+trained on simple templates and evaluated on natural text, or trained on English
+and tested on translated equivalents. This would help distinguish a real
+semantic coordinate system from a template-specific artifact.
+
+A third direction is intervention. If a point can be moved along a learned axis
+in the two-dimensional space, can the corresponding hidden-state intervention
+produce predictable changes in model behavior? That would move the codec from
+being a visualization tool toward being a steering interface. This would connect
+the codec to causal abstraction and model-editing work, where the goal is not
+only to read a representation but to test whether changing it changes behavior
+\cite{geiger2021, meng2022, nanda2023}.
+
+Another useful comparison point is unsupervised dictionary learning, which aims
+to recover sparse interpretable features from model activations at larger scale
+\cite{templeton2024}. The present codec is much smaller and supervised, but it
+shares the same practical ambition: turning opaque activation spaces into
+interfaces with named, testable coordinates.
+
+\section{Conclusion}
+
+This experiment shows that a very small linear codec can extract a clean,
+interpretable analogy space from frozen Qwen hidden states. In that space, the
+relation \(\mathrm{king} - \mathrm{man} + \mathrm{woman} \approx
+\mathrm{queen}\) holds almost exactly, the four classes are perfectly separable
+under a simple nearest-mean classifier, and the main semantic directions are
+nearly orthogonal.
+
+The result is small but suggestive. It points toward a practical style of
+mechanistic work where model internals are not only probed, but wrapped in
+compact interfaces with explicit validation gates. That is the larger promise:
+not just looking at activations, but building little semantic instruments that
+make them easier to test, compare, and eventually use.
+
+\begin{thebibliography}{99}
+
+\bibitem{mikolov2013}
+T.~Mikolov, K.~Chen, G.~Corrado, and J.~Dean.
+\newblock Efficient estimation of word representations in vector space.
+\newblock \emph{arXiv preprint arXiv:1301.3781}, 2013.
+
+\bibitem{mikolov2013analogies}
+T.~Mikolov, W.~Yih, and G.~Zweig.
+\newblock Linguistic regularities in continuous space word representations.
+\newblock In \emph{Proceedings of NAACL-HLT}, pages 746--751, 2013.
+
+\bibitem{alain2016}
+G.~Alain and Y.~Bengio.
+\newblock Understanding intermediate layers using linear classifier probes.
+\newblock \emph{arXiv preprint arXiv:1610.01644}, 2016.
+
+\bibitem{hewitt2019}
+J.~Hewitt and P.~Liang.
+\newblock Designing and interpreting probes with control tasks.
+\newblock In \emph{Proceedings of EMNLP-IJCNLP}, pages 2733--2743, 2019.
+
+\bibitem{belinkov2022}
+Y.~Belinkov.
+\newblock Probing classifiers: Promises, shortcomings, and advances.
+\newblock \emph{Computational Linguistics}, 48(1):207--219, 2022.
+
+\bibitem{park2023}
+K.~Park, Y.~J. Choe, and V.~Veitch.
+\newblock The linear representation hypothesis and the geometry of large language models.
+\newblock \emph{arXiv preprint arXiv:2311.03658}, 2023.
+
+\bibitem{elhage2022}
+N.~Elhage, T.~Hume, C.~Olsson, N.~Schiefer, T.~Henighan, S.~Kravec,
+  Z.~Hatfield-Dodds, R.~Lasenby, D.~Drain, C.~Chen, R.~Grosse, S.~McCandlish,
+  J.~Kaplan, D.~Amodei, M.~Wattenberg, and C.~Olah.
+\newblock Toy models of superposition.
+\newblock \emph{Transformer Circuits Thread}, 2022.
+
+\bibitem{geiger2021}
+A.~Geiger, H.~Lu, T.~Icard, and C.~Potts.
+\newblock Causal abstractions of neural networks.
+\newblock In \emph{Advances in Neural Information Processing Systems}, volume~34, pages 9574--9586, 2021.
+
+\bibitem{meng2022}
+K.~Meng, D.~Bau, A.~Andonian, and Y.~Belinkov.
+\newblock Locating and editing factual associations in GPT.
+\newblock In \emph{Advances in Neural Information Processing Systems}, volume~35, pages 17359--17372, 2022.
+
+\bibitem{nanda2023}
+N.~Nanda, A.~Lee, and M.~Wattenberg.
+\newblock Emergent linear representations in world models of self-supervised sequence models.
+\newblock \emph{arXiv preprint arXiv:2309.00941}, 2023.
+
+\bibitem{templeton2024}
+A.~Templeton, T.~Conerly, J.~Marcus, J.~Lindsey, T.~Bricken, B.~Chen,
+  A.~Pearce, C.~Citro, E.~Ameisen, A.~Jermyn, T.~Henighan, S.~Kravec,
+  Z.~Hatfield-Dodds, R.~Lasenby, D.~Hume, J.~Bills, B.~Lee, N.~Schiefer,
+  J.~Batson, M.~Wattenberg, and C.~Olah.
+\newblock Scaling monosemanticity: Extracting interpretable features from
+  Claude 3 Sonnet.
+\newblock \emph{Transformer Circuits Thread}, 2024.
+
+\bibitem{qwen2024}
+A.~Yang, B.~Yang, B.~Hui, et~al.
+\newblock Qwen2 technical report.
+\newblock \emph{arXiv preprint arXiv:2407.10671}, 2024.
+
+\end{thebibliography}
+
+\end{document}
