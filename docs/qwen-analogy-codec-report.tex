@@ -36,15 +36,16 @@ space, the classic analogy relation
 \[
   \mathrm{king} - \mathrm{man} + \mathrm{woman} \approx \mathrm{queen}
 \]
-holds with cosine similarity around 0.9996. The four word classes are also
-perfectly separated by a nearest-mean classifier in the two-dimensional space,
-and the learned gender and royalty directions are nearly orthogonal. The point
-of the experiment is not to claim a universal semantic basis inside Qwen. It is
-to show, in a controlled setting, that useful semantic structure can be pulled
-out of model activations and compressed into a very small, inspectable interface.
-A loss ablation shows that classification-only training still recovers a strong
-analogy cosine of 0.9840, suggesting that the relation is not created solely by
-the explicit analogy term. Held-out vocabulary tests show partial generalization:
+holds with cosine similarity around 0.9996 under the full objective. A
+classification-only ablation still recovers an analogy cosine of 0.9840,
+suggesting that the relation is not created solely by the explicit analogy
+term. The four word classes are also perfectly separated by a nearest-mean
+classifier in the two-dimensional space, and the learned gender and royalty
+directions are nearly orthogonal. The point of the experiment is not to claim a
+universal semantic basis inside Qwen. It is to show, in a controlled setting,
+that useful semantic structure can be pulled out of model activations and
+compressed into a very small, inspectable interface. Held-out vocabulary tests
+show partial generalization:
 royal words such as \emph{prince} and \emph{duke} land nearest to \emph{king},
 while \emph{princess} and \emph{duchess} land nearest to \emph{queen}. A
 pseudoinverse hidden-state intervention gives small but directional evidence
@@ -419,7 +420,7 @@ log-probabilities for six target words.
 \centering
 \begin{tabular}{lrr}
 \toprule
-Continuation & Shift at \(\alpha=0.5\) & Shift at \(\alpha=1.0\) \\
+Continuation & Shift at \(\alpha=0.5\) (nats) & Shift at \(\alpha=1.0\) (nats) \\
 \midrule
 king     & -0.051 & -0.105 \\
 queen    &  0.285 &  0.574 \\
@@ -429,7 +430,7 @@ man      & -0.012 & -0.020 \\
 woman    &  0.285 &  0.559 \\
 \bottomrule
 \end{tabular}
-\caption{Continuation log-probability shifts relative to \(\alpha=0\), in nats.
+\caption{Continuation log-probability shifts relative to \(\alpha=0\).
 The intervention raises queen/woman/princess continuations and slightly lowers
 king/prince/man continuations.}
 \label{tab:intervention}
