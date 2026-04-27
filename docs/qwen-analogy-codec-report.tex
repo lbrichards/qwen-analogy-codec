@@ -283,33 +283,33 @@ very small supervised interface.
 \subsection{Layer Sweep}
 
 The original run used one hidden layer, selected by an offset of 10 from the
-final layer. To check whether the result depends on a single cherry-picked
-layer, we repeated the extraction across all decoder-layer outputs and trained
-the same codec at each layer. Figure~\ref{fig:layer-sweep} shows the analogy
-cosine and held-out classification accuracy by layer.
+final layer. To check whether the analogy structure is already linearly
+recoverable before the explicit analogy loss, we repeated the extraction across
+all decoder-layer outputs and trained a classification-only codec at each layer.
+Figure~\ref{fig:layer-sweep} shows the analogy cosine and held-out
+classification accuracy by layer.
 
 \begin{figure}[h]
 \centering
 \includegraphics[width=0.92\linewidth]{layer_sweep.pdf}
 \caption{Layer sweep over decoder-layer outputs. The dashed line marks the
-original layer used in the main experiment. With the full loss, the analogy
-geometry is recoverable across most layers; the latest layers show the most
-visible drop in analogy cosine, while nearest-mean classification remains
-saturated.}
+original layer used in the main experiment. The sweep uses classification loss
+only, so analogy geometry is not directly optimized.}
 \label{fig:layer-sweep}
 \end{figure}
 
-The sweep weakens the cherry-picking concern but also shows a limitation of this
-particular metric. With the full objective, the small codec can recover
-near-perfect analogy geometry from nearly every layer, so the layer sweep is not
-a sensitive probe of where the structure first appears. The slight drop in the
-latest layers suggests that the relation is not equally legible everywhere, but
-classification accuracy is saturated throughout.
+This version of the sweep is more informative than the full-loss version:
+classification accuracy is saturated everywhere, but analogy cosine varies
+substantially. Early layers, the original layer, and several late-middle layers
+retain strong analogy geometry under classification-only training. A few middle
+layers and the final layers are much weaker. This suggests that the analogy
+relation is not an artifact of one chosen layer, but it is also not uniformly
+legible throughout the model.
 
 \section{Held-Out Vocabulary}
 
 The four training words leave open an obvious concern: perhaps the codec has
-only memorized four labels. To make a first check, we froze the trained codec
+only memorized four labels. As a first check, we froze the trained codec
 and extracted new hidden states for eight held-out words using the same sentence
 template scheme:
 \[
@@ -448,11 +448,14 @@ This is not a dramatic steering result. The greedy completions were nearly
 unchanged: at \(\alpha=0\) and \(\alpha=0.5\), the model continued with
 ``bit upset, but I tried to be,'' while at \(\alpha=1.0\) it continued with
 ``bit upset, and I wanted to help.'' Still, the log-probability shifts are
-directional. The same 2D shift that moves \(\mu_{\mathrm{king}}\) toward the
-queen side of the codec also increases the probabilities of queen-related and
-female-coded continuations in the downstream distribution. This is modest
-evidence that the codec is not only a readable interface, but a weak writeable
-one.
+directional. The pseudoinverse intervention produces the minimum-norm
+perturbation matching the 2D target, which does not guarantee alignment with
+the model's natural use of those directions. The monotone downstream effect is
+therefore a modest piece of evidence rather than a clean steering result. Still,
+the same 2D shift that moves \(\mu_{\mathrm{king}}\) toward the queen side of
+the codec also increases the probabilities of queen-related and female-coded
+continuations in the downstream distribution. This is modest evidence that the
+codec is not only a readable interface, but a weak writeable one.
 
 \section{Limitations}
 
@@ -485,24 +488,19 @@ rather than cleanly isolated in general \cite{elhage2022}.
 
 \section{Next Steps}
 
-The most natural next step is to scale the vocabulary while keeping the codec
-small. For example, one could include terms such as \emph{prince},
-\emph{princess}, \emph{duke}, \emph{duchess}, \emph{boy}, \emph{girl},
-\emph{father}, and \emph{mother}, plus neutral controls. If the same two axes
-remain useful, the result becomes much more compelling.
+The most natural next step is to broaden the vocabulary in a more systematic
+way. The current held-out set is suggestive, but a stronger test would include
+neutral controls such as \emph{person} and \emph{human}, unrelated nouns, and
+antonyms or role terms that should not be forced into the four training
+quadrants. Cross-lingual tests are also attractive: if the same codec geometry
+transfers to Japanese or other languages, the result would be harder to explain
+as a template-specific English artifact.
 
-Another direction is to test cross-context generalization. The codec could be
-trained on simple templates and evaluated on natural text, or trained on English
-and tested on translated equivalents. This would help distinguish a real
-semantic coordinate system from a template-specific artifact.
-
-A third direction is intervention. If a point can be moved along a learned axis
-in the two-dimensional space, can the corresponding hidden-state intervention
-produce predictable changes in model behavior? That would move the codec from
-being a visualization tool toward being a steering interface. This would connect
-the codec to causal abstraction and model-editing work, where the goal is not
-only to read a representation but to test whether changing it changes behavior
-\cite{geiger2021, meng2022, nanda2023}.
+The intervention result should also be extended. The present experiment only
+tests one gender-direction shift at one token and one layer. A stronger followup
+would test royalty shifts, longer contexts, multiple prompts, and interventions
+at several layers. It would also compare the pseudoinverse perturbation against
+more natural perturbations estimated directly from hidden-state differences.
 
 Another useful comparison point is unsupervised dictionary learning, which aims
 to recover sparse interpretable features from model activations at larger scale
@@ -521,9 +519,11 @@ nearly orthogonal.
 
 The result is small but suggestive. It points toward a practical style of
 mechanistic work where model internals are not only probed, but wrapped in
-compact interfaces with explicit validation gates. That is the larger promise:
-not just looking at activations, but building little semantic instruments that
-make them easier to test, compare, and eventually use.
+compact interfaces with explicit validation gates. The codec is not only
+readable: it generalizes partially to unseen royal and gendered vocabulary, and
+a pseudoinverse intervention produces small but coherent shifts in downstream
+token probabilities. Together these point toward interfaces that can be read,
+tested, and, at least weakly, written to.
 
 \begin{thebibliography}{99}
 

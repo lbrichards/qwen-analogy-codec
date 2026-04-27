@@ -23,7 +23,13 @@ from qwen_analogy_codec.model_io import (
 )
 
 
-FULL_LOSS_WEIGHTS = {"cls": 1.0, "analogy": 3.0, "perp": 1.0, "orth": 0.1, "sep": 0.5}
+CLASSIFICATION_ONLY_WEIGHTS = {
+    "cls": 1.0,
+    "analogy": 0.0,
+    "perp": 0.0,
+    "orth": 0.0,
+    "sep": 0.0,
+}
 
 
 def make_sentences(words: list[str], samples_per_word: int, seed: int) -> dict[str, list[str]]:
@@ -120,7 +126,7 @@ def main() -> None:
         print(f"Training codec for layer {layer_index}...")
         W_e, b_e = train_with_weights(
             layer_reps[layer_index],
-            weights=FULL_LOSS_WEIGHTS,
+            weights=CLASSIFICATION_ONLY_WEIGHTS,
             seed=args.train_seed,
             steps=args.steps,
             lr=args.lr,
@@ -183,10 +189,10 @@ def main() -> None:
     plt.plot(xs, analogy, marker="o", linewidth=1.8, label="Analogy cosine")
     plt.plot(xs, accuracy, marker="s", linewidth=1.8, label="Held-out accuracy")
     plt.axvline(26, color="black", linestyle="--", linewidth=1.0, alpha=0.5, label="Original layer")
-    plt.ylim(0.95, 1.005)
+    plt.ylim(-0.35, 1.05)
     plt.xlabel("Decoder layer output index")
     plt.ylabel("Metric")
-    plt.title("Layer sweep for analogy-codec readability")
+    plt.title("Classification-only layer sweep")
     plt.grid(True, alpha=0.25)
     plt.legend(loc="lower right")
     plt.tight_layout()
